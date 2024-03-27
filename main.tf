@@ -40,6 +40,7 @@ resource "aws_s3_bucket" "default" {
   tags = module.this.tags
 }
 
+
 resource "aws_s3_bucket_accelerate_configuration" "default" {
   count = local.transfer_acceleration_enabled ? 1 : 0
 
