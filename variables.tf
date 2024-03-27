@@ -52,22 +52,18 @@ variable "versioning_enabled" {
   type        = bool
   default     = true
   description = "A state of versioning. Versioning is a means of keeping multiple variants of an object in the same bucket"
-  nullable    = false
+  nullable    = true
 }
 
-variable "logging" {
-  type = list(object({
-    bucket_name = string
-    prefix      = string
-  }))
-  default     = []
-  description = "Bucket access logging configuration. Empty list for no logging, list of 1 to enable logging."
+variable "logging_bucket_name" {
+  type        = string
+  description = "Bucket access logging configuration. Provide the logging bucket name"
   nullable    = false
 }
 
 variable "sse_algorithm" {
   type        = string
-  default     = "AES256"
+  default     = "aws:kms"
   description = "The server-side encryption algorithm to use. Valid values are `AES256` and `aws:kms`"
   nullable    = false
 }

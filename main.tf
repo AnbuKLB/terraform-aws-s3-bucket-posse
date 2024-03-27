@@ -50,12 +50,10 @@ resource "aws_s3_bucket_accelerate_configuration" "default" {
 
 # Ensure the resource exists to track drift, even if the feature is disabled
 resource "aws_s3_bucket_versioning" "default" {
-  count = local.enabled ? 1 : 0
-
+  count  = local.enabled ? 1 : 0
   bucket = local.bucket_id
-
   versioning_configuration {
-    status = local.versioning_enabled ? "Enabled" : "Suspended"
+    status = "Enabled"
   }
 }
 
@@ -65,27 +63,28 @@ moved {
 }
 
 resource "aws_s3_bucket_logging" "default" {
-  for_each = toset(local.enabled && length(var.logging) > 0 ? ["enabled"] : [])
-
-  bucket = local.bucket_id
-
-  target_bucket = var.logging[0]["bucket_name"]
-  target_prefix = var.logging[0]["prefix"]
+  count         = local.enabled ? 1 : 0
+  bucket        = local.bucket_id
+  target_bucket = var.logging_bucket_name
+  target_prefix = "/log"
 }
 
 # https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html
 # https://www.terraform.io/docs/providers/aws/r/s3_bucket.html#enable-default-server-side-encryption
+
+resource "aws_kms_key" "default" {
+  count       = local.enabled && var.kms_master_key_arn == "" ? 1 : 0
+  description = "This key is used to encrypt bucket objects"
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
-  count = local.enabled ? 1 : 0
-
+  count  = local.enabled ? 1 : 0
   bucket = local.bucket_id
-
   rule {
-    bucket_key_enabled = var.bucket_key_enabled
-
+    bucket_key_enabled = true
     apply_server_side_encryption_by_default {
       sse_algorithm     = var.sse_algorithm
-      kms_master_key_id = var.kms_master_key_arn
+      kms_master_key_id = var.kms_master_key_arn != "" ? var.kms_master_key_arn : aws_kms_key.default.arn
     }
   }
 }
@@ -528,8 +527,8 @@ resource "aws_s3_bucket_public_access_block" "default" {
 
   bucket = local.bucket_id
 
-  block_public_acls       = var.block_public_acls
-  block_public_policy     = var.block_public_policy
+  block_public_acls       = true
+  block_public_policy     = true
   ignore_public_acls      = var.ignore_public_acls
   restrict_public_buckets = var.restrict_public_buckets
 }
